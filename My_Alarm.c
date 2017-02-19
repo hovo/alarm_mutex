@@ -59,7 +59,7 @@ void *display_thread(void *arg) {
         }
     } while(now < end_time);
 
-    printf("Display Thread <%d>: Alarm Expired at <%ld>: <%d %s> ",
+    printf("Display Thread <%d>: Alarm Expired at <%ld>: <%d %s>\n",
         alarm->thread_id, time(NULL), alarm->seconds, alarm->message);
 
     free(alarm);

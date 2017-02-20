@@ -100,10 +100,7 @@ void *alarm_thread (void *arg) {
          * command. If the list is not empty, pass the alarm to the appropriate
          * display_thread_id. 
          */
-        if (alarm == NULL) {
-            sleep(1);
-        }    
-        else {
+        if (alarm != NULL) {
             alarm_list = alarm->link;
             /* If the alarm expiry time is close to  an odd integer, pass the 
              * alarm to display_thread_1, and if it is close to an even integer,
@@ -157,7 +154,8 @@ int main (int argc, char *argv[]) {
            // alarm->time = time (NULL) + alarm->seconds;
            alarm->time = time (NULL);
             // A3.2
-            printf("Main Thread Received Alarm Request at <%ld>: <%d %s>\n", alarm->time, alarm->seconds, alarm->message);
+            printf("Main Thread Received Alarm Request at <%ld>: <%d %s>\n", 
+                alarm->time, alarm->seconds, alarm->message);
 
             /*
              * Insert the new alarm into the list of alarms,

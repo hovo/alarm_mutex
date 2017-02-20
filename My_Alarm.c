@@ -66,13 +66,19 @@ void *display_thread(void *arg) {
     pthread_exit(0);    
 }
 
+void printMessage(int status, alarm_t *alarm) {
+    if(status == 0) {
+        printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
+            alarm->thread_id, time(NULL), alarm->seconds, alarm->message);
+    }         
+}
+
 /*
  * The alarm thread's start routine.
  */
 void *alarm_thread (void *arg) {
     alarm_t *alarm;
     int sleep_time;
-    int display_thread_id;
     int status;
     time_t now;
 
@@ -99,20 +105,16 @@ void *alarm_thread (void *arg) {
             alarm_list = alarm->link;
             // A3.3
             if(alarm->time % 2 != 0 ) {
-                display_thread_id = 1;
-                alarm->thread_id = display_thread_id;
+                alarm->thread_id = 1;
                 status = pthread_create(&display_thread_1, NULL, display_thread, alarm);
+                printMessage(status, alarm);
             } else {
-                display_thread_id = 2;
-                alarm->thread_id = display_thread_id;
+                alarm->thread_id = 2;
                 status = pthread_create(&display_thread_2, NULL, display_thread, alarm);
+                printMessage(status, alarm);
             }
             // A3.3
-            now = time(NULL);
-            if(status == 0) {
-                printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
-                    display_thread_id, now, alarm->seconds, alarm->message);
-            }         
+            
         }
     }
 }
@@ -150,7 +152,6 @@ int main (int argc, char *argv[]) {
                 err_abort (status, "Lock mutex");
            // alarm->time = time (NULL) + alarm->seconds;
            alarm->time = time (NULL);
-
             // A3.2
             printf("Main Thread Received Alarm Request at <%ld>: <%d %s>\n", alarm->time, alarm->seconds, alarm->message);
 

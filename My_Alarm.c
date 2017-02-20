@@ -42,7 +42,7 @@ void *display_thread(void *arg) {
     int end_time;
     // A3.4 (a)
     printf("Display <%d>: Received Alarm Request at <%ld>: <%d %s>, ExpiryTime is <%ld>\n", 
-        alarm->display_thread_id, alarm->time, alarm->seconds, alarm->message, alarm->time + alarm->seconds);
+        alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message, alarm->time + alarm->seconds);
     
     now = time(NULL);
     end_time = now + alarm->seconds;

@@ -25,31 +25,35 @@ typedef struct alarm_tag {
     struct alarm_tag    *link;
     int                 seconds;
     time_t              time;   /* seconds from EPOCH */
-    int                 thread_id;
+    int                 display_thread_id; /* Either 1 or 2   */
     char                message[64];
 } alarm_t;
 
 pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
 alarm_t *alarm_list = NULL;
 
+/*
+ * Responsible for processing display_thread_1 and display_thread_2
+ */
 void *display_thread(void *arg) {
     alarm_t *alarm = (alarm_t*)arg;
     int secondsLeft;
     time_t now;
     int end_time;
-
+    // A3.4 (a)
     printf("Display <%d>: Received Alarm Request at <%ld>: <%d %s>, ExpiryTime is <%ld>\n", 
-        alarm->thread_id, alarm->time, alarm->seconds, alarm->message, alarm->time + alarm->seconds);
+        alarm->display_thread_id, alarm->time, alarm->seconds, alarm->message, alarm->time + alarm->seconds);
     
     now = time(NULL);
     end_time = now + alarm->seconds;
     secondsLeft = alarm->seconds;
     // loop and print 
     do {
+        // A3.4 (b) 
         printf("Display Thread <%d>: Number of SecondsLeft <%d>: Time: <%ld>: <%d %s>\n",
-            alarm->thread_id, secondsLeft, time(NULL), alarm->seconds, alarm->message);
+            alarm->display_thread_id, secondsLeft, time(NULL), alarm->seconds, alarm->message);
         if(secondsLeft < 2) {
-            sleep(1);
+            sleep(secondsLeft);
             now++;
             secondsLeft--;
         } else {
@@ -58,18 +62,19 @@ void *display_thread(void *arg) {
             secondsLeft -= 2;
         }
     } while(now < end_time);
-
+    //A3.4 (c)
     printf("Display Thread <%d>: Alarm Expired at <%ld>: <%d %s>\n",
-        alarm->thread_id, time(NULL), alarm->seconds, alarm->message);
+        alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
 
     free(alarm);
     pthread_exit(0);    
 }
 
+/* A3.3c */
 void printMessage(int status, alarm_t *alarm) {
     if(status == 0) {
         printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
-            alarm->thread_id, time(NULL), alarm->seconds, alarm->message);
+            alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
     }         
 }
 
@@ -85,36 +90,34 @@ void *alarm_thread (void *arg) {
     pthread_t display_thread_1, display_thread_2;
 
     /*
-     * Loop forever, processing commands. The alarm thread will
-     * be disintegrated when the process exits.
+     * Loop forever, processing commands. 
      */
     while (1) {
         alarm = alarm_list;
         /*
          * If the alarm list is empty, wait for one second. This
          * allows the main thread to run, and read another
-         * command. If the list is not empty, remove the first
-         * item. Compute the number of seconds to wait -- if the
-         * result is less than 0 (the time has passed), then set
-         * the sleep_time to 0.
+         * command. If the list is not empty, pass the alarm to the appropriate
+         * display_thread_id. 
          */
         if (alarm == NULL) {
-            sleep_time = 1;
+            sleep(1);
         }    
         else {
             alarm_list = alarm->link;
-            // A3.3
-            if(alarm->time % 2 != 0 ) {
-                alarm->thread_id = 1;
+            /* If the alarm expiry time is close to  an odd integer, pass the 
+             * alarm to display_thread_1, and if it is close to an even integer,
+             * pass the alarm to display_thread_2
+            */
+            if(alarm->time + alarm->seconds % 2 != 0 ) {
+                alarm->display_thread_id = 1;
                 status = pthread_create(&display_thread_1, NULL, display_thread, alarm);
                 printMessage(status, alarm);
             } else {
-                alarm->thread_id = 2;
+                alarm->display_thread_id = 2;
                 status = pthread_create(&display_thread_2, NULL, display_thread, alarm);
                 printMessage(status, alarm);
             }
-            // A3.3
-            
         }
     }
 }

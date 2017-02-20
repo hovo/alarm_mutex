@@ -39,6 +39,7 @@ void *display_thread(void *arg) {
     alarm_t *alarm = (alarm_t*)arg;
     int secondsLeft;
     time_t now;
+    time_t expired_at;
     int end_time;
     // A3.4 (a)
     printf("Display <%d>: Received Alarm Request at <%ld>: <%d %s>, ExpiryTime is <%ld>\n", 
@@ -46,7 +47,7 @@ void *display_thread(void *arg) {
     
     now = time(NULL);
     end_time = now + alarm->seconds;
-    secondsLeft = alarm->seconds;
+    secondsLeft = alarm->seconds + alarm->time - time(NULL); 
     // loop and print 
     do {
         // A3.4 (b) 
@@ -62,9 +63,10 @@ void *display_thread(void *arg) {
             secondsLeft -= 2;
         }
     } while(now < end_time);
+    expired_at = time(NULL);
     //A3.4 (c)
     printf("Display Thread <%d>: Alarm Expired at <%ld>: <%d %s>\n",
-        alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
+        alarm->display_thread_id, expired_at, alarm->seconds, alarm->message);
 
     free(alarm);
     pthread_exit(0);    
@@ -119,6 +121,7 @@ void *alarm_thread (void *arg) {
                 printMessage(status, alarm);
             }
         }
+        
     }
 }
 

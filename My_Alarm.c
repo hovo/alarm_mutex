@@ -46,7 +46,7 @@ void *display_thread(void *arg) {
     
     now = time(NULL);
     end_time = now + alarm->seconds;
-    secondsLeft = alarm->seconds + alarm->time - time(NULL); 
+    secondsLeft = alarm->seconds;
     // loop and print 
     do {
         // A3.4 (b) 
@@ -83,10 +83,7 @@ void printMessage(int status, alarm_t *alarm) {
  */
 void *alarm_thread (void *arg) {
     alarm_t *alarm;
-    int sleep_time;
     int status;
-    time_t now;
-
     pthread_t display_thread_1, display_thread_2;
 
     /*
@@ -95,9 +92,7 @@ void *alarm_thread (void *arg) {
     while (1) {
         alarm = alarm_list;
         /*
-         * If the alarm list is empty, wait for one second. This
-         * allows the main thread to run, and read another
-         * command. If the list is not empty, pass the alarm to the appropriate
+         * If the list is not empty, pass the alarm to the appropriate
          * display_thread_id. 
          */
         if (alarm != NULL) {

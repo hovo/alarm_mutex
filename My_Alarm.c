@@ -70,13 +70,6 @@ void *display_thread(void *arg) {
     pthread_exit(0);    
 }
 
-/* A3.3c */
-void printMessage(int status, alarm_t *alarm) {
-    if(status == 0) {
-        printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
-            alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
-    }         
-}
 
 /*
  * The alarm thread's start routine.
@@ -104,12 +97,14 @@ void *alarm_thread (void *arg) {
             if(alarm->time + alarm->seconds % 2 != 0 ) {
                 alarm->display_thread_id = 1;
                 status = pthread_create(&display_thread_1, NULL, display_thread, alarm);
-                printMessage(status, alarm);
             } else {
                 alarm->display_thread_id = 2;
                 status = pthread_create(&display_thread_2, NULL, display_thread, alarm);
-                printMessage(status, alarm);
             }
+            if(status == 0) {
+                printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
+                    alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
+            }         
         }
         
     }

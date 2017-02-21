@@ -133,16 +133,16 @@ int main (int argc, char *argv[]) {
          * (%64[^\n]), consisting of up to 64 characters
          * separated from the seconds by whitespace.
          */
-        if (sscanf (line, "%d %64[^\n]", 
-            &alarm->seconds, alarm->message) < 2) {
+        if (sscanf (line, "%d %64[^\n]", &alarm->seconds, alarm->message) < 2
+            || alarm->seconds < 0) {
             fprintf (stderr, "Bad command\n");
             free (alarm);
         } else {
             status = pthread_mutex_lock (&alarm_mutex);
             if (status != 0)
                 err_abort (status, "Lock mutex");
-           // alarm->time = time (NULL) + alarm->seconds;
-           alarm->time = time (NULL);
+            // alarm->time = time (NULL) + alarm->seconds;
+            alarm->time = time (NULL);
             // A3.2
             printf("Main Thread Received Alarm Request at <%ld>: <%d %s>\n", 
                 alarm->time, alarm->seconds, alarm->message);

@@ -94,11 +94,11 @@ void *alarm_thread (void *arg) {
              * alarm to display_thread_1, and if it is close to an even integer,
              * pass the alarm to display_thread_2
             */
-            if(alarm->time + alarm->seconds % 2 != 0 ) {
-                alarm->display_thread_id = 1;
+            if((alarm->time + alarm->seconds) % 2 == 0 ) {
+                alarm->display_thread_id = 2;
                 status = pthread_create(&display_thread_1, NULL, display_thread, alarm);
             } else {
-                alarm->display_thread_id = 2;
+                alarm->display_thread_id = 1;
                 status = pthread_create(&display_thread_2, NULL, display_thread, alarm);
             }
             if(status == 0) {

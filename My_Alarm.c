@@ -11,6 +11,8 @@
  * thread can lock the mutex to add new work to the list.
  */
 #include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
 #include <time.h>
 #include "errors.h"
 
@@ -29,29 +31,37 @@ typedef struct alarm_tag {
     char                message[64];
 } alarm_t;
 
-pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
-alarm_t *alarm_list = NULL;
+pthread_mutex_t alarm_mutex_odd = PTHREAD_MUTEX_INITIALIZER;
+alarm_t *alarm_list_odd = NULL;
 
-/*
- * Responsible for processing display_thread_1 and display_thread_2
- */
-void *display_thread(void *arg) {
-    alarm_t *alarm = (alarm_t*)arg;
-    int secondsLeft;
+pthread_mutex_t alarm_mutex_even = PTHREAD_MUTEX_INITIALIZER;
+alarm_t *alarm_list_even = NULL;
+
+int alarmPipe[2];
+int odd_id = 1;
+int even_id = 2;
+
+// Make a new function as there are issues with process_alarm function
+void process_alarms(alarm_t *alarm_list) {
+    
+}
+
+void process_alarm(alarm_t *alarm) {
+   int secondsLeft;
     time_t now;
-    int end_time;
     // A3.4 (a)
-    printf("Display <%d>: Received Alarm Request at <%ld>: <%d %s>, ExpiryTime is <%ld>\n", 
-        alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message, alarm->time + alarm->seconds);
+    printf("Display Thread <%d>: Received Alarm Request at <%ld>: <%d %s>, ExpiryTime is <%ld>\n", 
+        alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message, alarm->time);
     
     now = time(NULL);
-    end_time = now + alarm->seconds;
     secondsLeft = alarm->seconds;
+    
     // loop and print 
     do {
         // A3.4 (b) 
         printf("Display Thread <%d>: Number of SecondsLeft <%d>: Time: <%ld>: <%d %s>\n",
             alarm->display_thread_id, secondsLeft, time(NULL), alarm->seconds, alarm->message);
+            
         if(secondsLeft < 2) {
             sleep(secondsLeft);
             now++;
@@ -61,15 +71,52 @@ void *display_thread(void *arg) {
             now += 2;
             secondsLeft -= 2;
         }
-    } while(now < end_time);
+    } while(now < alarm->time);
     //A3.4 (c)
     printf("Display Thread <%d>: Alarm Expired at <%ld>: <%d %s>\n",
         alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
-
-    free(alarm);
-    pthread_exit(0);    
 }
 
+void *display_thread (void *arg) {
+    int *thread_id = (int*)arg;
+    int status;
+    int sleepTime;
+    alarm_t *alarm, **alarm_list;
+    pthread_mutex_t *list_mutex;
+
+    if (*thread_id == 1) {
+        alarm_list = &alarm_list_odd;
+        list_mutex = &alarm_mutex_odd;
+    } else if (*thread_id == 2) {
+        alarm_list = &alarm_list_even;
+        list_mutex = &alarm_mutex_even;
+    } else {
+        return 0;
+    }
+
+    while (1) {
+        status = pthread_mutex_lock (list_mutex);
+        if (status != 0) err_abort (status, "Lock mutex");
+
+        alarm = *alarm_list;
+        if (alarm == NULL) {
+            sleepTime = 0.5;
+	    //sleepTime = 1;
+        } else {
+            process_alarm(alarm);
+            // do magic, find new sleep time and print if needed
+            alarm_list = &alarm->link;
+        }
+
+        status = pthread_mutex_unlock (list_mutex);
+        if (status != 0) err_abort (status, "Unlock mutex");
+
+        if (sleepTime > 0)
+            sleep (sleepTime);
+        else
+            sched_yield ();
+    }
+}
 
 /*
  * The alarm thread's start routine.
@@ -77,55 +124,76 @@ void *display_thread(void *arg) {
 void *alarm_thread (void *arg) {
     alarm_t *alarm;
     int status;
-    pthread_t display_thread_1, display_thread_2;
+    alarm_t **alarm_list, **last, *next;
+    pthread_mutex_t *list_mutex;
 
-    /*
-     * Loop forever, processing commands. 
-     */
     while (1) {
-        alarm = alarm_list;
-        /*
-         * If the list is not empty, pass the alarm to the appropriate
-         * display_thread_id. 
-         */
-        if (alarm != NULL) {
-            alarm_list = alarm->link;
-            /* If the alarm expiry time is close to  an odd integer, pass the 
-             * alarm to display_thread_1, and if it is close to an even integer,
-             * pass the alarm to display_thread_2
-            */
-            if((alarm->time + alarm->seconds) % 2 == 0 ) {
-                alarm->display_thread_id = 2;
-                status = pthread_create(&display_thread_1, NULL, display_thread, alarm);
-            } else {
-                alarm->display_thread_id = 1;
-                status = pthread_create(&display_thread_2, NULL, display_thread, alarm);
-            }
-            if(status == 0) {
-                printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
-                    alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
-            }         
+        status = read(alarmPipe[0], &alarm, sizeof(alarm));
+        if (status <= 0) err_abort (status, "Pipe read");
+
+        if (alarm->time % 2 == 0) {
+            alarm->display_thread_id = even_id;
+            alarm_list = &alarm_list_even;
+            list_mutex = &alarm_mutex_even;
+        } else {
+            alarm->display_thread_id = odd_id;
+            alarm_list = &alarm_list_odd;
+            list_mutex = &alarm_mutex_odd;
         }
-        
+
+        status = pthread_mutex_lock (list_mutex);
+        if (status != 0) err_abort (status, "Lock mutex");
+        // insert into the list in a sorted order
+        last = alarm_list;
+        next = *last;
+        while (next != NULL) {
+            if (next->time >= alarm->time) {
+                alarm->link = next;
+                *last = alarm;
+                break;
+            }
+            last = &next->link;
+            next = next->link;
+        }
+        if (next == NULL) {
+            *last = alarm;
+            alarm->link = NULL;
+        }
+        status = pthread_mutex_unlock (list_mutex);
+        if (status != 0) err_abort (status, "Unlock mutex");
+
+        // print statement
+        printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n", 
+            alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
     }
 }
 
-int main (int argc, char *argv[]) {
+int main (int argc, char *argv[])
+{
     int status;
     char line[128];
-    alarm_t *alarm, **last, *next;
-    pthread_t thread;
+    alarm_t *alarm;
+    pthread_t thread, display_thread_1, display_thread_2;
 
-    status = pthread_create (
-        &thread, NULL, alarm_thread, NULL);
-    if (status != 0)
-        err_abort (status, "Create alarm thread");
+    status = pipe(alarmPipe);
+    if (status != 0) err_abort (status, "Create pipe");
+
+    status = pthread_create (&thread, NULL, alarm_thread, NULL);
+    if (status != 0) err_abort (status, "Create alarm thread");
+
+    // Create two additional threads: display_thread_1
+    status = pthread_create (&display_thread_1, NULL, display_thread, &odd_id);
+    if (status != 0) err_abort (status, "Create display thread 1");
+    // and display_thread_2
+    status = pthread_create (&display_thread_2, NULL, display_thread, &even_id);
+    if (status != 0) err_abort (status, "Create display thread 2");
+
     while (1) {
         printf ("alarm> ");
         if (fgets (line, sizeof (line), stdin) == NULL) exit (0);
         if (strlen (line) <= 1) continue;
         alarm = (alarm_t*)malloc (sizeof (alarm_t));
-        if (alarm == NULL)
+        if (alarm == NULL) 
             errno_abort ("Allocate alarm");
 
         /*
@@ -133,55 +201,18 @@ int main (int argc, char *argv[]) {
          * (%64[^\n]), consisting of up to 64 characters
          * separated from the seconds by whitespace.
          */
-        if (sscanf (line, "%d %64[^\n]", &alarm->seconds, alarm->message) < 2
-            || alarm->seconds < 0) {
+        if (sscanf (line, "%d %64[^\n]", &alarm->seconds, alarm->message) < 2 || alarm->seconds < 0) {
             fprintf (stderr, "Bad command\n");
             free (alarm);
         } else {
-            status = pthread_mutex_lock (&alarm_mutex);
-            if (status != 0)
-                err_abort (status, "Lock mutex");
-            // alarm->time = time (NULL) + alarm->seconds;
-            alarm->time = time (NULL);
+            alarm->time = time (NULL) + alarm->seconds; // Expiry time
+
             // A3.2
             printf("Main Thread Received Alarm Request at <%ld>: <%d %s>\n", 
-                alarm->time, alarm->seconds, alarm->message);
+                alarm->time - alarm->seconds, alarm->seconds, alarm->message);
 
-            /*
-             * Insert the new alarm into the list of alarms,
-             * sorted by expiration time.
-             */
-            last = &alarm_list;
-            next = *last;
-            while (next != NULL) {
-                if (next->time >= alarm->time) {
-                    alarm->link = next;
-                    *last = alarm;
-                    break;
-                }
-                last = &next->link;
-                next = next->link;
-            }
-            /*
-             * If we reached the end of the list, insert the new
-             * alarm there. ("next" is NULL, and "last" points
-             * to the link field of the last item, or to the
-             * list header).
-             */
-            if (next == NULL) {
-                *last = alarm;
-                alarm->link = NULL;
-            }
-#ifdef DEBUG
-            printf ("[list: ");
-            for (next = alarm_list; next != NULL; next = next->link)
-                printf ("%d(%d)[\"%s\"] ", next->time,
-                    next->time - time (NULL), next->message);
-            printf ("]\n");
-#endif
-            status = pthread_mutex_unlock (&alarm_mutex);
-            if (status != 0)
-                err_abort (status, "Unlock mutex");
+            status = write(alarmPipe[1], &alarm, sizeof(alarm));
+            if (status < 0) err_abort (status, "Pipe write");
         }
     }
 }

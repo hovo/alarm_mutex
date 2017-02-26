@@ -1,0 +1,93 @@
+# [TEST = SUCCESS] Negative argument
+
+alarm> -1 Negative
+Bad command
+
+# [TEST = SUCCESS] Zero argument
+
+alarm> 0 Zero
+Main Thread Received Alarm Request at <1488077805>: <0 Zero>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <1> at <1488077805>: <0 Zero>
+Display Thread <1>: Received Alarm Request at <1488077805>: <0 Zero>, ExpiryTime is <1488077805>
+Display Thread <1>: Number of SecondsLeft <0>: Time: <1488077805>: <0 Zero>
+Display Thread <1>: Alarm Expired at <1488077805>: <0 Zero>
+
+# [TEST = SUCCESS] Positive arguments
+
+alarm> 1 Second
+Main Thread Received Alarm Request at <1488077852>: <1 Second>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <1> at <1488077852>: <1 Second>
+Display Thread <1>: Received Alarm Request at <1488077852>: <1 Second>, ExpiryTime is <1488077853>
+Display Thread <1>: Number of SecondsLeft <1>: Time: <1488077852>: <1 Second>
+Display Thread <1>: Alarm Expired at <1488077853>: <1 Second>
+
+alarm> 2 Seconds
+Main Thread Received Alarm Request at <1488077857>: <2 Seconds>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <1> at <1488077857>: <2 Seconds>
+Display Thread <1>: Received Alarm Request at <1488077857>: <2 Seconds>, ExpiryTime is <1488077859>
+Display Thread <1>: Number of SecondsLeft <2>: Time: <1488077857>: <2 Seconds>
+Display Thread <1>: Alarm Expired at <1488077859>: <2 Seconds>
+
+alarm> 5 Seconds
+Main Thread Received Alarm Request at <1488077839>: <5 Seconds>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488077839>: <5 Seconds>
+Display Thread <2>: Received Alarm Request at <1488077839>: <5 Seconds>, ExpiryTime is <1488077844>
+Display Thread <2>: Number of SecondsLeft <5>: Time: <1488077839>: <5 Seconds>
+Display Thread <2>: Number of SecondsLeft <3>: Time: <1488077841>: <5 Seconds>
+Display Thread <2>: Number of SecondsLeft <1>: Time: <1488077843>: <5 Seconds>
+Display Thread <2>: Alarm Expired at <1488077844>: <5 Seconds>
+
+# [TEST = SUCCESS] Alarm requests in different display threads, running concurrently
+
+alarm> 20 Request_1
+Main Thread Received Alarm Request at <1488078087>: <20 Request_1>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <1> at <1488078087>: <20 Request_1>
+Display Thread <1>: Received Alarm Request at <1488078087>: <20 Request_1>, ExpiryTime is <1488078107>
+Display Thread <1>: Number of SecondsLeft <20>: Time: <1488078087>: <20 Request_1>
+Display Thread <1>: Number of SecondsLeft <18>: Time: <1488078089>: <20 Request_1>
+Display Thread <1>: Number of SecondsLeft <16>: Time: <1488078091>: <20 Request_1>
+Display Thread <1>: Number of SecondsLeft <14>: Time: <1488078093>: <20 Request_1>
+20 Request_2
+Main Thread Received Alarm Request at <1488078094>: <20 Request_2>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488078094>: <20 Request_2>
+Display Thread <2>: Received Alarm Request at <1488078094>: <20 Request_2>, ExpiryTime is <1488078114>
+Display Thread <2>: Number of SecondsLeft <20>: Time: <1488078094>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <12>: Time: <1488078095>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <18>: Time: <1488078096>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <10>: Time: <1488078097>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <16>: Time: <1488078098>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <8>: Time: <1488078099>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <14>: Time: <1488078100>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <6>: Time: <1488078101>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <12>: Time: <1488078102>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <4>: Time: <1488078103>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <10>: Time: <1488078104>: <20 Request_2>
+Display Thread <1>: Number of SecondsLeft <2>: Time: <1488078105>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <8>: Time: <1488078106>: <20 Request_2>
+Display Thread <1>: Alarm Expired at <1488078107>: <20 Request_1>
+Display Thread <2>: Number of SecondsLeft <6>: Time: <1488078108>: <20 Request_2>
+Display Thread <2>: Number of SecondsLeft <4>: Time: <1488078110>: <20 Request_2>
+Display Thread <2>: Number of SecondsLeft <2>: Time: <1488078112>: <20 Request_2>
+Display Thread <2>: Alarm Expired at <1488078114>: <20 Request_2>
+
+# [TEST = FAIL] Alarm requests in the same display thread, running concurrently
+
+alarm> 15 Request_1
+Main Thread Received Alarm Request at <1488140663>: <15 Request_1>
+alarm> Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488140663>: <15 Request_1>
+Display Thread <2>: Received Alarm Request at <1488140663>: <15 Request_1>, ExpiryTime is <1488140678>
+Display Thread <2>: Number of SecondsLeft <15>: Time: <1488140663>: <15 Request_1>
+15 Request_2
+Main Thread Received Alarm Request at <1488140665>: <15 Request_2>
+alarm> Display Thread <2>: Number of SecondsLeft <13>: Time: <1488140665>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <11>: Time: <1488140667>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <9>: Time: <1488140669>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <7>: Time: <1488140671>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <5>: Time: <1488140673>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <3>: Time: <1488140675>: <15 Request_1>
+Display Thread <2>: Number of SecondsLeft <1>: Time: <1488140677>: <15 Request_1>
+Display Thread <2>: Alarm Expired at <1488140678>: <15 Request_1>
+Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488140678>: <15 Request_2>
+Display Thread <2>: Received Alarm Request at <1488140678>: <15 Request_2>, ExpiryTime is <1488140680>
+Display Thread <2>: Number of SecondsLeft <15>: Time: <1488140678>: <15 Request_2>
+Display Thread <2>: Alarm Expired at <1488140680>: <15 Request_2>

@@ -8,8 +8,8 @@
 
 3. When running the executable code, you will notice instructions. Accordingly,
    type in the number of seconds at which the alarm should expire, followed by
-   the text of the message.
-   
+   the text of the message. Note that the number of seconds is an integer.
+
    For example:
 
    2 Good Morning!
@@ -19,3 +19,11 @@
 4. To read the output from the testing procedures, use the following command:
 
    cat Test_output
+
+Disclaimer: Some alternate inputs will be dealt with accordingly.
+
+            Input: 9.8
+            Will be treated as: 9 = number of seconds; .8 = message;
+
+            Input: 9Hello!
+            Will be treated as: 9 = number of seconds; Hello! = message;

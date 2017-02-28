@@ -1,3 +1,12 @@
+# [TEST_0 = SUCCESS] Invalid arguments
+
+X Y
+Invalid alarm request. Please try again.
+Good morning!
+Invalid alarm request. Please try again.
++ -
+Invalid alarm request. Please try again.
+
 # [TEST_1 = SUCCESS] Negative argument
 
 -1 Negative
@@ -12,7 +21,7 @@ Display Thread <2>: Received Alarm Request at <1488230402>: <0 Zero>, ExpiryTime
 Display Thread <2>: Number of SecondsLeft <0>: Time: <1488230402>: <0 Zero>
 Display Thread <2>: Alarm Expired at <1488230402>: <0 Zero>
 
-# [TEST_3(i) = SUCCESS] Positive argument
+# [TEST_3 = SUCCESS] Positive arguments
 
 1 Second
 Main Thread Received Alarm Request at <1488230407>: <1 Second>
@@ -20,18 +29,12 @@ Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488230407>: <1 S
 Display Thread <2>: Received Alarm Request at <1488230407>: <1 Second>, ExpiryTime is <1488230408>
 Display Thread <2>: Number of SecondsLeft <1>: Time: <1488230407>: <1 Second>
 Display Thread <2>: Alarm Expired at <1488230408>: <1 Second>
-
-# [TEST_3(ii) = SUCCESS] Positive argument
-
 2 Seconds
 Main Thread Received Alarm Request at <1488230413>: <2 Seconds>
 Alarm Thread Passed on Alarm Request to Display Thread <1> at <1488230413>: <2 Seconds>
 Display Thread <1>: Received Alarm Request at <1488230413>: <2 Seconds>, ExpiryTime is <1488230415>
 Display Thread <1>: Number of SecondsLeft <2>: Time: <1488230413>: <2 Seconds>
 Display Thread <1>: Alarm Expired at <1488230415>: <2 Seconds>
-
-# [TEST_3(iii) = SUCCESS] Positive argument
-
 5 Seconds
 Main Thread Received Alarm Request at <1488230439>: <5 Seconds>
 Alarm Thread Passed on Alarm Request to Display Thread <2> at <1488230439>: <5 Seconds>

@@ -138,9 +138,6 @@ void *display_thread (void *arg) {
 
 	// Process all queued alarms.
 	while (1) {
-		status = pthread_mutex_lock(list_mutex);
-		if (status != 0) err_abort(status, "Lock mutex");
-
 		// If alarm list is empty, wait for 0 seconds to allow main thread to read another command.
 		alarm = *alarm_list;
 		if (alarm == NULL) {
@@ -150,7 +147,7 @@ void *display_thread (void *arg) {
 			alarm_list = &alarm->link;
 		}
 
-		// Unlock mutex before waiting to allow main thread to insert more alarms.
+		// Unlock mutex to allow main thread to insert more alarms.
 		status = pthread_mutex_unlock(list_mutex);
 		if (status != 0) err_abort(status, "Unlock mutex");
 
@@ -280,11 +277,11 @@ int main (int argc, char *argv[]) {
 			free(alarm);
 		} else {
 			if (requestCounter > 0) {
-				timeAccumulation = timeAccumulation + alarm->seconds; // Expiry time for concurrent alarm requests.
-				alarm->time = time(NULL) + timeAccumulation;
+				timeAccumulation = timeAccumulation + alarm->seconds;
+				alarm->time = time(NULL) + timeAccumulation; // Expiry time for concurrent alarm requests.
 			} else {
-				alarm->time = time(NULL) + alarm->seconds; // Expiry time for asynchronous alarm requests.
 				timeAccumulation = alarm->seconds;
+				alarm->time = time(NULL) + alarm->seconds; // Expiry time for asynchronous alarm requests.
 			}
 
 			/*

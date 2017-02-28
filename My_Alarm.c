@@ -79,12 +79,12 @@ void process_alarm(alarm_t *alarm) {
 
 	/*
 	 * A3.4 (b)
-	 * While the current time is lesser than the expected expiry time,
-	 * the program will loop and print the number of seconds left with
-	 * the current time every two seconds. It accomplishes this by
-	 * modifying its relevant values by two anytime there are more
-	 * than two seconds left and two seconds pass. Otherwise, it
-	 * runs the clock out until expiry time.
+	 * While the current time is lesser than the expiry time, the
+	 * program will loop and print the current time along with the
+	 * number of seconds left every two seconds. It accomplishes this
+	 * by modifying its relevant values by two anytime there are more
+	 * than two seconds left. Otherwise, it runs the clock out until
+	 * expiry time.
 	 */
 	do {
 		printf("Display Thread <%d>: Number of SecondsLeft <%d>: Time: <%ld>: <%d %s>\n",
@@ -136,7 +136,12 @@ void *display_thread (void *arg) {
 		return 0;
 	}
 
-	// Process all queued alarms.
+	/*
+	 * A3.4
+	 * Allows display threads to repeatedly check to see whether the alarm thread
+	 * has passed an alarm request to itself. This loop also processes all queued
+	 * alarms.
+	 */
 	while (1) {
 		// If alarm list is empty, wait for 0 seconds to allow main thread to read another command.
 		alarm = *alarm_list;
@@ -174,16 +179,15 @@ void *alarm_thread (void *arg) {
 		if (status <= 0) err_abort(status, "Pipe read");
 
 		/*
+		 * A3.3 (a) and A3.3 (b)
 		 * If the alarm's expiry time is closer to an odd integer, pass the
 		 * alarm to display_thread_1, and if it is closer to an even integer,
 		 * pass the alarm to display_thread_2. This is achieved by the
 		 * modulus operator, passing the alarm request to an already created
 		 * POSIX Thread with display_thread_id = 2 if the expiry time is closer
 		 * to an even integer. Otherwise, the alarm request will be passed
-		 * to a different POSIX Thread with display_thread_id = 1. Once that
-		 * is completed, the program will output which display thread the alarm
-		 * request has been passed to. Mutexes and odd/even alarm lists will be
-		 * accordingly applied.
+		 * to a different POSIX Thread with display_thread_id = 1. Mutexes and
+		 * odd/even alarm lists will be accordingly applied.
 		 */
 		if (alarm->time % 2 == 0) {
 			alarm->display_thread_id = even_id;
@@ -214,10 +218,19 @@ void *alarm_thread (void *arg) {
 			*last = alarm;
 			alarm->link = NULL;
 		}
+
+		/*
+		 * A3.3 (d)
+		 * Allows alarm to retrieve and process new alarm requests from the alarm list.
+		 */
 		status = pthread_mutex_unlock(list_mutex);
 		if (status != 0) err_abort(status, "Unlock mutex");
 
-		// Print statement with regard to alarm thread passing the alarm request to a display thread.
+		/*
+		 * A3.3 (c)
+		 * Print statement with regard to alarm thread passing the alarm request
+		 * to a display thread.
+		 */
 		printf("Alarm Thread Passed on Alarm Request to Display Thread <%d> at <%ld>: <%d %s>\n",
 				alarm->display_thread_id, time(NULL), alarm->seconds, alarm->message);
 	}
@@ -236,13 +249,14 @@ int main (int argc, char *argv[]) {
 	status = pipe(alarmPipe);
 	if (status != 0) err_abort(status, "Create pipe");
 
+	/*
+	 * A3.1
+	 * Create alarm thread and two display threads.
+	 */
 	status = pthread_create(&thread, NULL, alarm_thread, NULL);
 	if (status != 0) err_abort(status, "Create alarm thread");
-
-	// Create two additional threads: display_thread_1,
 	status = pthread_create(&display_thread_1, NULL, display_thread, &odd_id);
 	if (status != 0) err_abort(status, "Create display thread 1");
-	// and display_thread_2.
 	status = pthread_create(&display_thread_2, NULL, display_thread, &even_id);
 	if (status != 0) err_abort(status, "Create display thread 2");
 
